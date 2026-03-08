@@ -1,0 +1,48 @@
+{
+	"languages": {
+		"Python": {
+			"language_servers": ["basedpyright", "ruff"],
+			"format_on_save": "on",
+			"formatter": {
+				"language_server": {
+					"name": "ruff",
+				},
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.ruff": true,
+			},
+		},
+	},
+	"lsp": {
+		"ruff": {
+			"initialization_options": {
+				"settings": {
+					"configurationPreference": "filesystemFirst",
+				},
+			},
+		},
+		"basedpyright": {
+			"settings": {
+				"python.analysis": {
+					"autoSearchPaths": false,
+					"diagnosticMode": "workspace",
+					"typeCheckingMode": "standard",
+					"autoImportCompletions": true,
+					"indexing": true,
+					"packageIndexDepths": [
+						{
+							"name": "django",
+							"depth": 5,
+							"includeAllSymbols": true,
+						},
+						{
+							"name": "rest_framework",
+							"depth": 5,
+							"includeAllSymbols": true,
+						},
+					],
+				},
+			},
+		},
+	},
+}
