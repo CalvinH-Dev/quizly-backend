@@ -2,6 +2,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from core.test_helpers.auth_helpers import create_user
+
 
 # Create your tests here.
 class RegistrationTest(APITestCase):
@@ -63,4 +65,56 @@ class RegistrationTest(APITestCase):
         ]
 
         response = self.client.post(url, duplicate_email_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LoginTest(APITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.login_data = {
+            "username": "your_username",
+            "password": "your_password",
+        }
+        register_data = self.login_data.copy()
+        register_data["email"] = "your_email@example.com"
+        self.user = create_user(**register_data)
+
+    def test_login_ok(self):
+        url = reverse("login")
+        response = self.client.post(url, self.login_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
+        self.assertTrue(response.cookies["access_token"].value)
+        self.assertTrue(response.cookies["refresh_token"].value)
+
+    def test_login_wrong_password(self):
+        url = reverse("login")
+        bad_data = self.login_data.copy()
+        bad_data["password"] = "wrong_password"
+        response = self.client.post(url, bad_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_wrong_username(self):
+        url = reverse("login")
+        bad_data = self.login_data.copy()
+        bad_data["username"] = "wrong_username"
+        response = self.client.post(url, bad_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_missing_password(self):
+        url = reverse("login")
+        bad_data = {"username": self.login_data["username"]}
+        response = self.client.post(url, bad_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_missing_username(self):
+        url = reverse("login")
+        bad_data = {"password": self.login_data["password"]}
+        response = self.client.post(url, bad_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_login_empty_body(self):
+        url = reverse("login")
+        response = self.client.post(url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

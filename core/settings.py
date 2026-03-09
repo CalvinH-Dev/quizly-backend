@@ -52,6 +52,8 @@ else:
     ]
     ALLOWED_HOSTS = []
 
+COOKIE_SECURE = not DEBUG
+
 
 # Application definition
 
@@ -64,6 +66,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework_simplejwt",
 ]
 
 MIDDLEWARE = [
@@ -149,6 +152,9 @@ else:
     STATIC_URL = "static/"
 
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
