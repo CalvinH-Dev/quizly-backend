@@ -5,7 +5,6 @@ from rest_framework.test import APITestCase
 from core.test_helpers.auth_helpers import create_user
 
 
-# Create your tests here.
 class RegistrationTest(APITestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -118,3 +117,70 @@ class LoginTest(APITestCase):
         url = reverse("login")
         response = self.client.post(url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutTest(APITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.login_data = {
+            "username": "your_username",
+            "password": "your_password",
+        }
+        register_data = self.login_data.copy()
+        register_data["email"] = "your_email@example.com"
+        self.user = create_user(**register_data)
+
+    def _login(self):
+        url = reverse("login")
+        response = self.client.post(url, self.login_data, format="json")
+        return response
+
+    def test_logout_ok(self):
+        self._login()
+        url = reverse("logout")
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data.get("detail"),
+            "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid.",
+        )
+        self.assertFalse(self.client.cookies.get("access_token", "").value)
+        self.assertFalse(self.client.cookies.get("refresh_token", "").value)
+
+    def test_logout_unauthenticated(self):
+        url = reverse("logout")
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class TokenRefreshTest(APITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.login_data = {
+            "username": "your_username",
+            "password": "your_password",
+        }
+        register_data = self.login_data.copy()
+        register_data["email"] = "your_email@example.com"
+        self.user = create_user(**register_data)
+
+    def _login(self):
+        url = reverse("login")
+        return self.client.post(url, self.login_data, format="json")
+
+    def test_refresh_ok(self):
+        self._login()
+        url = reverse("token_refresh")
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access_token", response.cookies)
+        self.assertTrue(response.cookies["access_token"].value)
+        self.assertEqual(
+            response.data.get("detail"),
+            "Token refreshed",
+        )
+
+    def test_refresh_no_cookie(self):
+        url = reverse("token_refresh")
+        response = self.client.post(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
