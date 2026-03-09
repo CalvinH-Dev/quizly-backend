@@ -1,7 +1,11 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
 class Quiz(models.Model):
+    owner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="quizzes"
+    )
     title = models.CharField(max_length=255)
     description = models.TextField(default="", blank=True)
     video_url = models.CharField(max_length=100)
