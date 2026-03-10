@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -22,9 +23,29 @@ class Question(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def clean(self):
+        super().clean()
+        if self.pk:
+            option_count = self.options.count()
+            if option_count != 4:
+                raise ValidationError(
+                    f"A question must have exactly 4 options, but has {option_count}."
+                )
+
 
 class Option(models.Model):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="options"
     )
     text = models.CharField(max_length=255)
+
+    def clean(self):
+        super().clean()
+        if not self.pk:
+            existing_count = self.question.options.count()
+            if existing_count >= 4:
+                raise ValidationError("A question can have at most 4 options.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

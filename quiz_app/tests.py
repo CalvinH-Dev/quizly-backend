@@ -129,6 +129,10 @@ class QuizRetrieveTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], self.quiz.id)
         self.assertEqual(response.data["title"], self.quiz.title)
+        self.assertEqual(response.data["description"], self.quiz.description)
+        self.assertEqual(response.data["video_url"], self.quiz.video_url)
+        self.assertIsNotNone(response.data["created_at"])
+        self.assertIsNotNone(response.data["updated_at"])
         self.assertEqual(len(response.data["questions"]), 2)
         for question in response.data["questions"]:
             assert_question_options(self, question)
