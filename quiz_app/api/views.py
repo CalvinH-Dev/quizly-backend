@@ -13,7 +13,7 @@ from quiz_app.api.services import (
     generate_quiz_from_json_transcript,
     get_transcript_as_json,
 )
-from quiz_app.api.utils import extract_yt_video_id
+from quiz_app.api.utils import extract_yt_video_id, save_quiz
 from quiz_app.models import Quiz
 
 
@@ -40,15 +40,17 @@ class QuizViewSet(ModelViewSet):
         return super().get_serializer_class()
 
     def create(self, request, *args, **kwargs):
+        url = request.data.get("url")
+        user = request.user
         try:
-            transcript_json = fetch_transcript(request.data.get("url"))
+            transcript_json = fetch_transcript(url)
             quiz_json = generate_quiz_from_json_transcript(transcript_json)
-        except Exception as e:
+            quiz = save_quiz(quiz_json, url, user)
+        except Exception:
             return Response(
                 {"error": "Quiz could not be generated."}, status=400
             )
-
-        return Response({"transcript": quiz_json}, status=201)
+        return Response(CreateQuizSerializer(quiz).data, status=201)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
