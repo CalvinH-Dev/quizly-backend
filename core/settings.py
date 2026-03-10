@@ -53,6 +53,7 @@ else:
     ALLOWED_HOSTS = []
 
 COOKIE_SECURE = not DEBUG
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
