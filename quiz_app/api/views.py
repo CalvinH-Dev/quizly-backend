@@ -8,6 +8,8 @@ from quiz_app.api.serializers import (
     QuizSerializer,
     UpdateQuizSerializer,
 )
+from quiz_app.api.services import fetch_transcript, get_transcript_as_json
+from quiz_app.api.utils import extract_yt_video_id
 from quiz_app.models import Quiz
 
 
@@ -34,12 +36,14 @@ class QuizViewSet(ModelViewSet):
         return super().get_serializer_class()
 
     def create(self, request, *args, **kwargs):
-        url = request.data.get("url")
-        # generate Quiz via Whisper AI + Gemini
-        # quiz = Quiz.objects.create(owner=request.user, video_url=url, ...)
+        try:
+            transcript_json = fetch_transcript(request.data.get("url"))
+        except Exception:
+            return Response(
+                {"error": "Transcript could not be generated."}, status=400
+            )
 
-        # response_serializer = CreateQuizSerializer(quiz)
-        # return Response(response_serializer.data, status=201)
+        return Response({"transcript": transcript_json}, status=201)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
