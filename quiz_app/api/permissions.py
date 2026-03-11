@@ -2,10 +2,14 @@ from rest_framework.permissions import BasePermission
 
 
 class IsQuizOwner(BasePermission):
-    """Permission class that allows access only to the owner of a profile."""
+    """Allow access only to the owner of a quiz."""
 
-    def has_object_permission(self, request, view, obj):
-        """Return True if the requesting user is the owner of the object."""
-        user = request.user
+    def has_object_permission(self, request, view, obj) -> bool:
+        """Return True if the requesting user is the quiz owner.
 
-        return user.id == obj.owner.id
+        Args:
+            request: The incoming request.
+            view: The view handling the request.
+            obj: The quiz instance being accessed.
+        """
+        return request.user.id == obj.owner.id
