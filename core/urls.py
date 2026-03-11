@@ -3,7 +3,8 @@ from django.http import JsonResponse
 from django.urls import include, path
 
 
-def health_check(request):
+def health_check(request: object) -> JsonResponse:
+    """Return server health status."""
     return JsonResponse({"status": "ok", "message": "Server is running"})
 
 

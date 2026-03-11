@@ -18,27 +18,44 @@ from auth_app.api.serializers import (
 
 
 class RegistrationView(APIView):
+    """Handle user registration."""
+
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        serializer = RegistrationSerializer(data=request.data)
+    def post(self, request: Request) -> Response:
+        """Register a new user.
 
-        data = {}
+        Args:
+            request: Incoming request containing user registration data.
+
+        Returns:
+            201 on success, 400 if validation fails.
+        """
+        serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            data = {"detail": "User created successfully!"}
-            return Response(data, status=status.HTTP_201_CREATED)
-        else:
             return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "User created successfully!"},
+                status=status.HTTP_201_CREATED,
             )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(TokenObtainPairView):
+    """Handle user login and set JWT tokens as HTTP-only cookies."""
+
     permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request: Request, *args, **kwargs) -> Response:
+        """Authenticate user and set access/refresh token cookies.
+
+        Args:
+            request: Incoming request containing login credentials.
+
+        Returns:
+            200 with user info on success, 401 if credentials are invalid.
+        """
         response = super().post(request, *args, **kwargs)
         refresh_token = response.data.get("refresh")
         access_token = response.data.get("access")
@@ -51,7 +68,6 @@ class LoginView(TokenObtainPairView):
             secure=settings.COOKIE_SECURE,
             samesite="Lax",
         )
-
         response.set_cookie(
             key="refresh_token",
             value=refresh_token,
@@ -59,21 +75,28 @@ class LoginView(TokenObtainPairView):
             secure=settings.COOKIE_SECURE,
             samesite="Lax",
         )
-
         response.data = {"detail": "Login successfully!", "user": user}
         return response
 
 
 class LogoutView(APIView):
-    def post(self, request: Request, *args, **kwargs) -> Response:
-        refresh_token = request.COOKIES.get("refresh_token")
+    """Handle user logout by blacklisting the refresh token and clearing cookies."""
 
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        """Blacklist the refresh token and delete auth cookies.
+
+        Args:
+            request: Incoming request containing the refresh token cookie.
+
+        Returns:
+            200 on success, 400 if token is missing or invalid.
+        """
+        refresh_token = request.COOKIES.get("refresh_token")
         if not refresh_token:
             return Response(
                 {"detail": "Refresh token not found."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
@@ -91,14 +114,22 @@ class LogoutView(APIView):
         )
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
-
         return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    def post(self, request: Request, *args, **kwargs) -> Response:
-        refresh_token = request.COOKIES.get("refresh_token")
+    """Refresh the access token using the refresh token stored in cookies."""
 
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        """Issue a new access token cookie from a valid refresh token cookie.
+
+        Args:
+            request: Incoming request containing the refresh token cookie.
+
+        Returns:
+            200 with new access token cookie, 401 if token is missing or invalid.
+        """
+        refresh_token = request.COOKIES.get("refresh_token")
         if not refresh_token:
             return Response(
                 {"detail": "Refresh token not found"},
@@ -106,7 +137,6 @@ class CookieTokenRefreshView(TokenRefreshView):
             )
 
         serializer = self.get_serializer(data={"refresh": refresh_token})
-
         try:
             serializer.is_valid(raise_exception=True)
         except TokenError:
@@ -116,7 +146,6 @@ class CookieTokenRefreshView(TokenRefreshView):
             )
 
         access_token = serializer.validated_data.get("access")
-
         response = Response({"detail": "Token refreshed"})
         response.set_cookie(
             key="access_token",
@@ -125,5 +154,4 @@ class CookieTokenRefreshView(TokenRefreshView):
             secure=settings.COOKIE_SECURE,
             samesite="Lax",
         )
-
         return response
